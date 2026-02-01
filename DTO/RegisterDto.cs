@@ -4,6 +4,9 @@ namespace MetaSoftware_TaskManagement.API.DTO
 {
     public class RegisterDto
     {
+        [Required, MaxLength(50)]
+        public string Username { get; set; }
+
         [Required, EmailAddress]
         public string Email { get; set; }
 

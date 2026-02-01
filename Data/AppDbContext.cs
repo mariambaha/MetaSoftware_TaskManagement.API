@@ -10,5 +10,11 @@ namespace MetaSoftware_TaskManagement.API.Data
         public DbSet<User> Users { get; set; }
         public DbSet<TaskItem> Tasks { get; set; }
         public DbSet<Log> Logs { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<User>().HasIndex(u => u.Username).IsUnique();
+            modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
+        }
     }
 }

@@ -9,6 +9,9 @@ namespace MetaSoftware_TaskManagement.API.DTO
 
         [MaxLength(500)]
         public string Description { get; set; }
+
+        [MaxLength(20)]
+        public string Status { get; set; } = "Pending";
     }
 
 }
