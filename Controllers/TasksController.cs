@@ -1,8 +1,7 @@
-﻿using MetaSoftware_TaskManagement.API.Data;
-using MetaSoftware_TaskManagement.API.DTO;
-using MetaSoftware_TaskManagement.API.Models;
+﻿using MetaSoftware_TaskManagement.API.DTO;
+using MetaSoftware_TaskManagement.API.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+
 
 namespace MetaSoftware_TaskManagement.API.Controllers
 {
@@ -10,14 +9,13 @@ namespace MetaSoftware_TaskManagement.API.Controllers
     [ApiController]
     public class TasksController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly TaskService _taskService;
 
-        public TasksController(AppDbContext context)
+        public TasksController(TaskService taskService)
         {
-            _context = context;
+            _taskService = taskService;
         }
 
-        // جلب كل المهام للمستخدم
         [HttpGet]
         public async Task<IActionResult> GetTasks()
         {
@@ -25,10 +23,8 @@ namespace MetaSoftware_TaskManagement.API.Controllers
                 return Unauthorized("User not authenticated");
 
             int userId = (int)HttpContext.Items["UserId"];
-            var tasks = await _context.Tasks
-                                      .Where(t => t.UserId == userId)
-                                      .ToListAsync();
 
+            var tasks = await _taskService.GetTasks(userId);
             return Ok(tasks);
         }
 
@@ -44,27 +40,13 @@ namespace MetaSoftware_TaskManagement.API.Controllers
             int userId = (int)HttpContext.Items["UserId"];
             string ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
 
-            var task = new TaskItem
+            var taskId = await _taskService.CreateTask(userId, dto, ipAddress);
+
+            return Ok(new
             {
-                Title = dto.Title.Trim(),
-                Description = dto.Description?.Trim(),
-                Status = string.IsNullOrEmpty(dto.Status) ? "Pending" : dto.Status,
-                UserId = userId
-            };
-
-            _context.Tasks.Add(task);
-
-            var log = new Log
-            {
-                UserId = userId,
-                Action = $"Created Task: {task.Title}",
-                IPAddress = ipAddress
-            };
-            _context.Logs.Add(log);
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Task created successfully", taskId = task.Id });
+                message = "Task created successfully",
+                taskId
+            });
         }
     }
 }
