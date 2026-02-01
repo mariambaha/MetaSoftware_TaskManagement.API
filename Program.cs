@@ -3,6 +3,7 @@ using MetaSoftware_TaskManagement.API.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using MetaSoftware_TaskManagement.API.Services;
 
 namespace MetaSoftware_TaskManagement.API
 {
@@ -37,6 +38,12 @@ namespace MetaSoftware_TaskManagement.API
                             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
                     };
                 });
+
+            builder.Services.AddScoped<AuthService>();
+
+            builder.Services.AddAuthentication("Bearer")
+            .AddJwtBearer();
+
 
             // Swagger
             builder.Services.AddEndpointsApiExplorer();
