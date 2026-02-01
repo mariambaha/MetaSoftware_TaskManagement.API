@@ -1,9 +1,10 @@
-using Microsoft.EntityFrameworkCore;
-using MetaSoftware_TaskManagement.API.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using MetaSoftware_TaskManagement.API.Data;
 using MetaSoftware_TaskManagement.API.Services;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace MetaSoftware_TaskManagement.API
 {
@@ -13,7 +14,8 @@ namespace MetaSoftware_TaskManagement.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container
+            // Services
+
             builder.Services.AddControllers();
 
             // Database
@@ -22,7 +24,11 @@ namespace MetaSoftware_TaskManagement.API
                     builder.Configuration.GetConnectionString("DefaultConnection"))
             );
 
+            // Dependency Injection
+            builder.Services.AddScoped<AuthService>();
+
             // JWT Authentication
+
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
@@ -39,11 +45,17 @@ namespace MetaSoftware_TaskManagement.API
                     };
                 });
 
-            builder.Services.AddScoped<AuthService>();
+            // Rate Limiting (5 requests/min)
 
-            builder.Services.AddAuthentication("Bearer")
-            .AddJwtBearer();
-
+            builder.Services.AddRateLimiter(options =>
+            {
+                options.AddFixedWindowLimiter("fixed", limiter =>
+                {
+                    limiter.PermitLimit = 5;
+                    limiter.Window = TimeSpan.FromMinutes(1);
+                    limiter.QueueLimit = 0;
+                });
+            });
 
             // Swagger
             builder.Services.AddEndpointsApiExplorer();
@@ -51,7 +63,8 @@ namespace MetaSoftware_TaskManagement.API
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline
+            // Middleware
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -60,10 +73,13 @@ namespace MetaSoftware_TaskManagement.API
 
             app.UseHttpsRedirection();
 
+            app.UseRateLimiter();
+
             app.UseAuthentication();
             app.UseAuthorization();
 
-            app.MapControllers();
+            app.MapControllers()
+               .RequireRateLimiting("fixed");
 
             app.Run();
         }
