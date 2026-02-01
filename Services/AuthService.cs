@@ -27,8 +27,8 @@ namespace MetaSoftware_TaskManagement.API.Services
 
             var user = new User
             {
-                Username = dto.Username,
-                Email = dto.Email,
+                Username = dto.Username.Trim(),
+                Email = dto.Email.Trim(),
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password)
             };
 
@@ -36,12 +36,17 @@ namespace MetaSoftware_TaskManagement.API.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<string> Login(LoginDto dto)
+        public async Task<User> ValidateUser(LoginDto dto)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == dto.Username);
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-                throw new Exception("Invalid credentials");
+                return null;
 
+            return user;
+        }
+
+        public string GenerateToken(User user)
+        {
             var claims = new[]
             {
                 new Claim(ClaimTypes.Name, user.Username),
@@ -52,9 +57,9 @@ namespace MetaSoftware_TaskManagement.API.Services
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                _config["Jwt:Issuer"],
-                _config["Jwt:Audience"],
-                claims,
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
                 expires: DateTime.UtcNow.AddHours(1),
                 signingCredentials: creds
             );
