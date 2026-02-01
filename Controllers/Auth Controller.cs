@@ -43,7 +43,7 @@ namespace MetaSoftware_TaskManagement.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == dto.Username);
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
                 return Unauthorized();
 
